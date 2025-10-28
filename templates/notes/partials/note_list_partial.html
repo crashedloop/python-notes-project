@@ -1,0 +1,36 @@
+{% if notes %}
+<div class="masonry">
+  {% for note in notes %}
+    {% include 'notes/partials/note_card.html' %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="no-results text-center py-12">
+  <svg class="w-24 h-24 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {% if search_query or tag_filter %}
+    <!-- Search icon for filtered results -->
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    {% else %}
+    <!-- Note icon for empty state -->
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    {% endif %}
+  </svg>
+  <h3 class="text-xl font-medium text-gray-600 dark:text-gray-400 mb-2">
+    {% if search_query or tag_filter %}
+      No matching notes found
+    {% else %}
+      No notes yet
+    {% endif %}
+  </h3>
+  <p class="text-gray-500 dark:text-gray-500">
+    {% if search_query %}
+      Try a different search term or clear your filters
+    {% elif tag_filter %}
+      No notes with tag "{{ tag_filter }}"
+    {% else %}
+      Start capturing your thoughts and ideas!
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+  

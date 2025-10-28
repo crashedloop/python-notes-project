@@ -1,0 +1,76 @@
+{% extends 'notes/base.html' %}
+{% block title %}Recycle Bin{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <svg class="w-8 h-8 text-[#5f6368] dark:text-[#9aa0a6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+      <h1 class="text-3xl font-bold text-[#202124] dark:text-[#e8eaed]">Recycle Bin</h1>
+    </div>
+    <a 
+      href="{% url 'notes:note_list' %}" 
+      class="px-4 py-2 bg-gray-100 dark:bg-[#3c4043] text-[#5f6368] dark:text-[#9aa0a6] hover:bg-gray-200 dark:hover:bg-[#5f6368] rounded-lg font-medium transition-all">
+      <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Back to Notes
+    </a>
+  </div>
+</div>
+
+<div id="deleted-notes-list">
+  {% if notes %}
+  <div class="space-y-3">
+    {% for note in notes %}
+    <div id="deleted-note-{{ note.id }}" class="bg-white dark:bg-[#2a2b2e] rounded-lg border border-gray-200 dark:border-[#5f6368] hover:shadow-lg dark:hover:shadow-2xl transition-all duration-200">
+      <div class="p-5 flex items-start justify-between">
+        <div class="flex-1 min-w-0 pr-4">
+          <h3 class="text-lg font-semibold text-[#202124] dark:text-[#e8eaed] mb-2">
+            {{ note.title|default:"Untitled" }}
+          </h3>
+          <p class="text-sm text-[#5f6368] dark:text-[#9aa0a6] mb-3 line-clamp-2">
+            {{ note.content|truncatechars:200 }}
+          </p>
+          <div class="flex items-center space-x-4 text-xs text-[#5f6368] dark:text-[#9aa0a6]">
+            <span class="flex items-center">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Deleted: {{ note.updated_at|date:"M d, Y H:i" }}
+            </span>
+          </div>
+        </div>
+        
+        <form 
+          hx-post="{% url 'notes:note_restore' note.id %}" 
+          hx-target="#deleted-note-{{ note.id }}" 
+          hx-swap="outerHTML swap:0.3s"
+          class="flex-shrink-0">
+          {% csrf_token %}
+          <button 
+            type="submit" 
+            class="px-4 py-2 bg-[#1a73e8] hover:bg-[#1557b0] dark:bg-[#8ab4f8] dark:hover:bg-[#aecbfa] text-white dark:text-[#202124] rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all duration-200">
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Restore
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-16">
+    <svg class="w-24 h-24 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+    <h3 class="text-xl font-medium text-[#5f6368] dark:text-[#9aa0a6] mb-2">Recycle bin is empty</h3>
+    <p class="text-[#5f6368] dark:text-[#9aa0a6]">Deleted notes will appear here</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

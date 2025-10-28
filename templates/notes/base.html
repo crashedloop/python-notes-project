@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Notes App{% endblock %}</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Configure Tailwind to use class-based dark mode
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+  
+  <!-- Font Awesome for editor icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  
+  <!-- Dark Mode Initialization (before page render to prevent flash) -->
+  <script>
+    // Initialize dark mode from localStorage or system preference
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+  
+  <style>
+    /* ================================================
+       CUSTOM SCROLLBAR (Google Keep Style)
+       ================================================ */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #dadce0;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #bdc1c6;
+      background-clip: content-box;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #5f6368;
+      background-clip: content-box;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #80868b;
+      background-clip: content-box;
+    }
+    
+    /* ================================================
+       MASONRY GRID LAYOUT (Responsive columns)
+       ================================================ */
+    .masonry {
+      column-count: 1;
+      column-gap: 1rem;
+    }
+    /* Tablet: 2 columns */
+    @media (min-width: 640px) {
+      .masonry {
+        column-count: 2;
+        column-gap: 1rem;
+      }
+    }
+    /* Desktop: 3 columns */
+    @media (min-width: 1024px) {
+      .masonry {
+        column-count: 3;
+        column-gap: 1rem;
+      }
+    }
+    /* Large Desktop: 4 columns */
+    @media (min-width: 1280px) {
+      .masonry {
+        column-count: 4;
+        column-gap: 1rem;
+      }
+    }
+    /* Extra Large: 5 columns */
+    @media (min-width: 1536px) {
+      .masonry {
+        column-count: 5;
+        column-gap: 1rem;
+      }
+    }
+    .masonry-item {
+      break-inside: avoid;
+      margin-bottom: 1rem;
+    }
+    
+    /* ================================================
+       SMOOTH TRANSITIONS (Applied globally)
+       ================================================ */
+    * {
+      transition-property: background-color, border-color, color, fill, stroke, opacity, transform, box-shadow;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 200ms;
+    }
+    
+    /* ================================================
+       FLOATING ADD BUTTON (Fixed bottom-right)
+       With pulse animation on hover
+       ================================================ */
+    .floating-add-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fbbc04;
+      color: #202124;
+      box-shadow: 0 4px 8px rgba(251, 188, 4, 0.3), 0 6px 20px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      border: none;
+    }
+    .floating-add-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(251, 188, 4, 0.4), 0 8px 28px rgba(0, 0, 0, 0.2);
+      animation: pulse 1.5s infinite;
+    }
+    .floating-add-btn:active {
+      transform: scale(0.95);
+    }
+    .dark .floating-add-btn {
+      background: #fbbc04;
+      color: #202124;
+      box-shadow: 0 4px 8px rgba(251, 188, 4, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Pulse animation for floating button */
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 6px 16px rgba(251, 188, 4, 0.4), 0 8px 28px rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        box-shadow: 0 6px 20px rgba(251, 188, 4, 0.6), 0 8px 32px rgba(0, 0, 0, 0.25);
+      }
+    }
+    
+    /* Mobile responsive: Smaller button */
+    @media (max-width: 640px) {
+      .floating-add-btn {
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 48px;
+        height: 48px;
+      }
+    }
+    
+    /* ================================================
+       MODAL OVERLAY (Fade-in animation)
+       ================================================ */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+      backdrop-filter: blur(2px);
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    /* Modal content with slide-up animation */
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dark .modal-content {
+      background: #2a2b2e;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    }
+    
+    /* Fade-in animation */
+    @keyframes fadeIn {
+      from { 
+        opacity: 0; 
+      }
+      to { 
+        opacity: 1; 
+      }
+    }
+    
+    /* Slide-up animation for modal */
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    /* Mobile responsive: Full-width modal on small screens */
+    @media (max-width: 640px) {
+      .modal-content {
+        width: 95%;
+        max-height: 90vh;
+      }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full bg-white dark:bg-[#202124] transition-colors duration-200">
+
+<!-- Navigation -->
+<nav class="bg-white dark:bg-[#202124] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 shadow-sm dark:shadow-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="flex items-center">
+        <a href="{% url 'notes:note_list' %}" class="flex items-center space-x-3 group">
+          <svg class="w-9 h-9 text-yellow-500 group-hover:text-yellow-600 dark:text-yellow-400 dark:group-hover:text-yellow-500 transition-all duration-200 transform group-hover:scale-110" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+          </svg>
+          <span class="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent group-hover:from-yellow-600 group-hover:to-yellow-500 dark:group-hover:from-yellow-400 dark:group-hover:to-yellow-300 transition-all duration-200">Notes</span>
+        </a>
+      </div>
+
+      <!-- Search Bar (only shown when authenticated) -->
+      {% if user.is_authenticated %}
+      <div class="flex-1 max-w-xl mx-4 hidden md:block">
+        <div class="relative">
+          <input 
+            type="text" 
+            id="search-input"
+            name="search"
+            placeholder="Search notes, tags, or content..." 
+            value="{{ search_query }}"
+            hx-get="{% url 'notes:note_list' %}"
+            hx-trigger="keyup changed delay:300ms, search"
+            hx-target="#notes-list"
+            hx-include="[name='filter'],[name='sort'],[name='tag']"
+            class="w-full bg-gray-100 dark:bg-[#303134] text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-600 transition-all"
+          />
+          <svg class="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Navigation Links -->
+      <div class="flex items-center space-x-4">
+        {% if user.is_authenticated %}
+          <a href="{% url 'notes:recycle_bin' %}" class="text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </a>
+          <span class="text-gray-600 dark:text-gray-400 text-sm hidden sm:inline">{{ user.username }}</span>
+          
+          <!-- Dark Mode Toggle -->
+          <button 
+            id="theme-toggle" 
+            type="button" 
+            class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg p-2.5 transition-colors"
+            title="Toggle dark mode">
+            <!-- Sun icon (visible in dark mode) -->
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"/>
+            </svg>
+            <!-- Moon icon (visible in light mode) -->
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+            </svg>
+          </button>
+          
+          <a href="{% url 'logout' %}" class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Logout
+          </a>
+        {% else %}
+          <a href="{% url 'login' %}" class="text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            Login
+          </a>
+          
+          <!-- Dark Mode Toggle for non-authenticated users -->
+          <button 
+            id="theme-toggle-guest" 
+            type="button" 
+            class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg p-2.5 transition-colors"
+            title="Toggle dark mode">
+            <!-- Sun icon (visible in dark mode) -->
+            <svg id="theme-toggle-light-icon-guest" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"/>
+            </svg>
+            <!-- Moon icon (visible in light mode) -->
+            <svg id="theme-toggle-dark-icon-guest" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+            </svg>
+          </button>
+          
+          <a href="{% url 'signup' %}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+            Sign up
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Messages -->
+{% if messages %}
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    {% for message in messages %}
+      <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg mb-4 animate-fade-in">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<!-- Content -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<!-- Dark Mode Toggle Script -->
+<script>
+  // Get theme toggle buttons and icons
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  const themeToggleBtnGuest = document.getElementById('theme-toggle-guest');
+  const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+  const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+  const themeToggleDarkIconGuest = document.getElementById('theme-toggle-dark-icon-guest');
+  const themeToggleLightIconGuest = document.getElementById('theme-toggle-light-icon-guest');
+
+  // Function to update icons based on current theme
+  function updateIcons() {
+    if (document.documentElement.classList.contains('dark')) {
+      // Dark mode is active - show sun icon
+      if (themeToggleDarkIcon) themeToggleDarkIcon.classList.add('hidden');
+      if (themeToggleLightIcon) themeToggleLightIcon.classList.remove('hidden');
+      if (themeToggleDarkIconGuest) themeToggleDarkIconGuest.classList.add('hidden');
+      if (themeToggleLightIconGuest) themeToggleLightIconGuest.classList.remove('hidden');
+    } else {
+      // Light mode is active - show moon icon
+      if (themeToggleDarkIcon) themeToggleDarkIcon.classList.remove('hidden');
+      if (themeToggleLightIcon) themeToggleLightIcon.classList.add('hidden');
+      if (themeToggleDarkIconGuest) themeToggleDarkIconGuest.classList.remove('hidden');
+      if (themeToggleLightIconGuest) themeToggleLightIconGuest.classList.add('hidden');
+    }
+  }
+
+  // Function to toggle theme
+  function toggleTheme() {
+    if (document.documentElement.classList.contains('dark')) {
+      // Switch to light mode
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      // Switch to dark mode
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+    updateIcons();
+  }
+
+  // Initialize icons on page load
+  updateIcons();
+
+  // Add event listeners to both buttons
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', toggleTheme);
+  }
+  if (themeToggleBtnGuest) {
+    themeToggleBtnGuest.addEventListener('click', toggleTheme);
+  }
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>
+

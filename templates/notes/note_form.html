@@ -1,0 +1,426 @@
+{% extends 'notes/base.html' %}
+{% block title %}{{ action }} Note{% endblock %}
+
+{% block extra_head %}
+<!-- EasyMDE Markdown Editor -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<style>
+  .EasyMDEContainer {
+    background: transparent;
+  }
+  .EasyMDEContainer .CodeMirror {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    color: #202124;
+    font-family: 'Roboto', 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    padding: 1rem;
+  }
+  .dark .EasyMDEContainer .CodeMirror {
+    background: #202124;
+    border-color: #5f6368;
+    color: #e8eaed;
+  }
+  .EasyMDEContainer .CodeMirror-scroll {
+    min-height: 300px;
+  }
+  .editor-toolbar {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+  .dark .editor-toolbar {
+    background: #292a2d;
+    border-color: #5f6368;
+    border-bottom-color: #5f6368;
+  }
+  .editor-toolbar button {
+    color: #5f6368 !important;
+  }
+  .dark .editor-toolbar button {
+    color: #9aa0a6 !important;
+  }
+  .editor-toolbar button:hover,
+  .editor-toolbar button.active {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: none !important;
+  }
+  .dark .editor-toolbar button:hover,
+  .dark .editor-toolbar button.active {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: none !important;
+  }
+  .editor-toolbar i.separator {
+    border-left-color: #e0e0e0;
+  }
+  .dark .editor-toolbar i.separator {
+    border-left-color: #5f6368;
+  }
+  .CodeMirror-cursor {
+    border-left-color: #202124;
+  }
+  .dark .CodeMirror-cursor {
+    border-left-color: #e8eaed;
+  }
+  
+  /* Image preview styles (Google Keep style) */
+  .image-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+  }
+  .dark .image-preview-container {
+    border-top-color: #5f6368;
+  }
+  .image-preview {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    background: #f8f9fa;
+  }
+  .dark .image-preview {
+    border-color: #5f6368;
+    background: #292a2d;
+  }
+  .image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .image-preview .remove-image {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+    font-size: 16px;
+    padding: 0;
+  }
+  .image-preview:hover .remove-image {
+    opacity: 1;
+  }
+  .image-preview .remove-image:hover {
+    background: rgba(211, 47, 47, 0.9);
+    transform: scale(1.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white dark:bg-[#2a2b2e] rounded-lg shadow-lg border border-gray-300 dark:border-[#5f6368]">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-semibold text-[#202124] dark:text-[#e8eaed]">{{ action }} Note</h2>
+        {% if note.is_pinned %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z"/>
+          </svg>
+          Pinned
+        </span>
+        {% endif %}
+      </div>
+
+      <form method="post" action="" class="space-y-6" id="note-form">
+        {% csrf_token %}
+        
+        <div>
+          <label for="id_title" class="block text-sm font-medium text-[#5f6368] dark:text-[#9aa0a6] mb-2">
+            Title
+          </label>
+          <input 
+            type="text" 
+            name="title" 
+            id="id_title"
+            value="{{ note.title|default:'' }}" 
+            class="w-full px-4 py-3 bg-white dark:bg-[#292a2d] border border-gray-300 dark:border-[#5f6368] rounded-lg text-[#202124] dark:text-[#e8eaed] placeholder-[#5f6368] dark:placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] dark:focus:ring-[#8ab4f8] focus:border-transparent transition-all"
+            placeholder="Enter note title"
+            required 
+          />
+        </div>
+
+        <div>
+          <label for="id_tags_input" class="block text-sm font-medium text-[#5f6368] dark:text-[#9aa0a6] mb-2">
+            Tags
+          </label>
+          <input 
+            type="text" 
+            name="tags_input" 
+            id="id_tags_input"
+            value="{{ form.tags_input.value|default:'' }}" 
+            class="w-full px-4 py-3 bg-white dark:bg-[#292a2d] border border-gray-300 dark:border-[#5f6368] rounded-lg text-[#202124] dark:text-[#e8eaed] placeholder-[#5f6368] dark:placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] dark:focus:ring-[#8ab4f8] focus:border-transparent transition-all"
+            placeholder="Tags (comma-separated, e.g., work, important, ideas)"
+          />
+          <p class="mt-1 text-xs text-[#5f6368] dark:text-[#9aa0a6]">Separate tags with commas</p>
+        </div>
+
+        <div>
+          <label for="id_content" class="block text-sm font-medium text-[#5f6368] dark:text-[#9aa0a6] mb-2">
+            Content
+          </label>
+          <textarea 
+            id="id_content" 
+            name="content" 
+            placeholder="Write your note here...">{{ note.content|default:'' }}</textarea>
+          
+          <!-- Image preview container -->
+          <div id="image-previews" class="image-preview-container" style="display: none;">
+            <!-- Image previews will be inserted here -->
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-[#5f6368]">
+          <a 
+            href="{% url 'notes:note_list' %}" 
+            class="px-6 py-2.5 text-[#5f6368] dark:text-[#9aa0a6] hover:bg-gray-100 dark:hover:bg-[#3c4043] rounded-lg font-medium transition-all">
+            Cancel
+          </a>
+          
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 bg-[#1a73e8] hover:bg-[#1557b0] dark:bg-[#8ab4f8] dark:hover:bg-[#aecbfa] text-white dark:text-[#202124] rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200">
+            <svg class="w-5 h-5 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            {% if action == 'Edit' %}Update{% else %}Save{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    let uploadedImages = []; // Track uploaded images
+    
+    // Get CSRF token
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    // Custom image upload function
+    function uploadImage(file, onSuccess, onError) {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      fetch('{% url "notes:upload_image" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          onSuccess(data.url);
+        } else {
+          onError(data.error || 'Upload failed');
+        }
+      })
+      .catch(error => {
+        onError(error.message);
+      });
+    }
+    
+    // Add image preview
+    function addImagePreview(url) {
+      uploadedImages.push(url);
+      const container = document.getElementById('image-previews');
+      container.style.display = 'flex';
+      
+      const preview = document.createElement('div');
+      preview.className = 'image-preview';
+      preview.innerHTML = `
+        <img src="${url}" alt="Uploaded image">
+        <button type="button" class="remove-image" data-url="${url}">&times;</button>
+      `;
+      
+      container.appendChild(preview);
+      
+      // Add remove button handler
+      preview.querySelector('.remove-image').addEventListener('click', function() {
+        removeImage(url, preview);
+      });
+      
+      updateContentWithImages();
+    }
+    
+    // Remove image preview
+    function removeImage(url, previewElement) {
+      uploadedImages = uploadedImages.filter(img => img !== url);
+      previewElement.remove();
+      
+      if (uploadedImages.length === 0) {
+        document.getElementById('image-previews').style.display = 'none';
+      }
+      
+      updateContentWithImages();
+    }
+    
+    // Update content with image markdown at the end
+    function updateContentWithImages() {
+      const currentContent = easyMDE.value();
+      // Remove existing image markdown
+      let contentWithoutImages = currentContent.replace(/!\[.*?\]\(.*?\)\n*/g, '').trim();
+      
+      // Add images at the end if any
+      if (uploadedImages.length > 0) {
+        const imageMarkdown = uploadedImages.map(url => `![Image](${url})`).join('\n');
+        easyMDE.value(contentWithoutImages + (contentWithoutImages ? '\n\n' : '') + imageMarkdown);
+      } else {
+        easyMDE.value(contentWithoutImages);
+      }
+    }
+    
+    // Parse existing images from content
+    function parseExistingImages(content) {
+      const imageRegex = /!\[.*?\]\((.*?)\)/g;
+      let match;
+      while ((match = imageRegex.exec(content)) !== null) {
+        const url = match[1];
+        if (!uploadedImages.includes(url)) {
+          uploadedImages.push(url);
+          const container = document.getElementById('image-previews');
+          container.style.display = 'flex';
+          
+          const preview = document.createElement('div');
+          preview.className = 'image-preview';
+          preview.innerHTML = `
+            <img src="${url}" alt="Uploaded image">
+            <button type="button" class="remove-image" data-url="${url}">&times;</button>
+          `;
+          
+          container.appendChild(preview);
+          
+          preview.querySelector('.remove-image').addEventListener('click', function() {
+            removeImage(url, preview);
+          });
+        }
+      }
+      
+      // Remove image markdown from displayed content
+      if (uploadedImages.length > 0) {
+        const contentWithoutImages = content.replace(/!\[.*?\]\(.*?\)\n*/g, '').trim();
+        return contentWithoutImages;
+      }
+      return content;
+    }
+    
+    const easyMDE = new EasyMDE({
+      element: document.getElementById('id_content'),
+      spellChecker: false,
+      placeholder: "Write your note here...",
+      status: ['lines', 'words', 'cursor'],
+      previewRender: false, // Disable preview rendering
+      toolbar: [
+        'bold', 'italic', 'heading', '|',
+        'quote', 'unordered-list', 'ordered-list', '|',
+        {
+          name: 'checklist',
+          action: function(editor) {
+            const cm = editor.codemirror;
+            const cursor = cm.getCursor();
+            const line = cm.getLine(cursor.line);
+            
+            // Add a new task item
+            if (line.trim() === '') {
+              cm.replaceRange('- [ ] ', { line: cursor.line, ch: 0 });
+              cm.setCursor({ line: cursor.line, ch: 6 });
+            } else {
+              // Insert on new line
+              cm.replaceRange('\n- [ ] ', cursor);
+              cm.setCursor({ line: cursor.line + 1, ch: 6 });
+            }
+          },
+          className: 'fa fa-check-square',
+          title: 'Add Task'
+        },
+        '|',
+        'link',
+        {
+          name: 'image',
+          action: function(editor) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.multiple = true;
+            input.onchange = function(e) {
+              const files = Array.from(e.target.files);
+              files.forEach(file => {
+                uploadImage(file, 
+                  function(url) {
+                    addImagePreview(url);
+                  },
+                  function(error) {
+                    alert('Image upload failed: ' + error);
+                  }
+                );
+              });
+            };
+            input.click();
+          },
+          className: 'fa fa-picture-o',
+          title: 'Upload Image'
+        },
+        'code'
+      ],
+      autosave: {
+        enabled: false
+      },
+      renderingConfig: {
+        singleLineBreaks: false,
+        codeSyntaxHighlighting: true,
+      }
+    });
+    
+    // Parse existing content for images on load
+    const initialContent = easyMDE.value();
+    if (initialContent) {
+      const cleanedContent = parseExistingImages(initialContent);
+      easyMDE.value(cleanedContent);
+    }
+    
+    // Before form submission, update content with images
+    document.getElementById('note-form').addEventListener('submit', function(e) {
+      updateContentWithImages();
+    });
+  });
+</script>
+{% endblock %}

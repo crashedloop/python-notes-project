@@ -1,0 +1,57 @@
+{% extends 'notes/base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="w-full max-w-md">
+    <div class="bg-white dark:bg-[#2a2b2e] rounded-lg shadow-xl border border-gray-200 dark:border-[#5f6368] p-8">
+      <!-- Logo/Icon -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full mb-4">
+          <svg class="w-10 h-10 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-[#202124] dark:text-[#e8eaed]">Welcome Back</h2>
+        <p class="text-[#5f6368] dark:text-[#9aa0a6] mt-2">Sign in to your account</p>
+      </div>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        
+        {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-[#5f6368] dark:text-[#9aa0a6] mb-2">
+            {{ field.label }}
+          </label>
+          <input 
+            type="{{ field.field.widget.input_type }}"
+            name="{{ field.name }}"
+            id="{{ field.id_for_label }}"
+            class="w-full px-4 py-3 bg-white dark:bg-[#292a2d] border border-gray-300 dark:border-[#5f6368] rounded-lg text-[#202124] dark:text-[#e8eaed] placeholder-[#5f6368] dark:placeholder-[#9aa0a6] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] dark:focus:ring-[#8ab4f8] focus:border-transparent transition-all"
+            {% if field.field.required %}required{% endif %}
+          />
+          {% if field.errors %}
+            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors.0 }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <button 
+          type="submit" 
+          class="w-full px-6 py-3 bg-[#fbbc04] hover:bg-[#f9ab00] text-[#202124] rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200">
+          Sign In
+        </button>
+      </form>
+
+      <p class="text-center mt-6 text-[#5f6368] dark:text-[#9aa0a6]">
+        Don't have an account? 
+        <a href="{% url 'signup' %}" class="text-[#1a73e8] dark:text-[#8ab4f8] hover:underline font-medium">
+          Sign up
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
